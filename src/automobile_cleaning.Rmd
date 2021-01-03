@@ -1,0 +1,220 @@
+---
+title: "Automobile Cleaning"
+author: "Josu Alonso Castanedo & Emmanuel Rodríguez Belmonte"
+date: "Diciembre 2020"
+lang: "es-Es"
+geometry: margin=1in
+fontfamily: mathpazo
+fontsize: 11pt
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    highlight: tango
+
+---
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Descripción del Dataset
+
+Al realizar la búsqueda de una dataset lo suficientemente potente como para realizar un proyecto de minería de datos completo sobre ésta, diversas fuentes vinieron a la cabeza, por lo que se realizó una exploración de los principales resultados de sitios web tales como [Kaggle](https://www.kaggle.com) o [UCI ML Repository](https://archive.ics.uci.edu), quedándonos al final con la dataset [Automobile](https://archive.ics.uci.edu/ml/datasets/Automobile) de este último.
+
+El porqué de dicha elección se basa en que esta dataset se presenta interesante para un proyecto de minería de datos debido a la presencia de valores nulos entre sus filas, lo que puede dar lugar a una limpieza más activa de los datos, así como al hecho de presentar una numerosa cantidad de variables, tanto categóricas como numéricas, entre las que destacamos como categórica `make` (fabricante del automóvil) y `price` (precio de éste) por su correlación e importancia a la hora de discriminar un coche de otro. Esta gran cantidad de variables también hace de la dataset una candidata a procesos de reducción de dimensionalidad, lo que implicaría un ejercico aún mayor sobre ésta y un valor añadido para la práctica.
+
+Una vez comentado el atractivo de la dataset, podemos bajar a objetivos más concretos del análisis. Así pues, podríamos decir que el objetivo principal de este documento es discernir qué factores diferencian a los principales proveedores de vehículos automovilísticos, así como la relación entre la pertenencia a uno de estos grupos y el precio del automóvil en cuestión.
+
+
+# Integración y selección de los datos de interés
+
+Con los objetivos en mente y las principales características de la dataset descritas verbalmente, es el momento de bajar a la programación y ver datos más específicos y objetivos de nuestra dataset.
+
+Para continuar con la práctica, no obstante, primero deberemos cargar los datos dentro de nuestro entorno para poder trabajar con ellos:
+
+```{r message= FALSE, warning=FALSE}
+# Importamos las librerías a utilizar durante el análisis
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(corrgram)
+
+# Establecemos una semilla por si queremos replicar el resultado
+set.seed(555)
+
+
+###### Carga del dataset ######
+
+# Hardcodeamos el nombre de las columnas
+dataset.names <- c(
+  'symboling',
+  'normalized-losses',
+  'make',
+  'fuel-type',
+  'aspiration',
+  'num-of-doors',
+  'body-style',
+  'drive-wheels',
+  'engine-location',
+  'wheel-base',
+  'length',
+  'width',
+  'height',
+  'curb-weight',
+  'engine-type',
+  'num-of-cylinders',
+  'engine-size',
+  'fuel-system',
+  'bore',
+  'stroke',
+  'compression-ratio',
+  'horsepower',
+  'peak-rpm',
+  'city-mpg',
+  'highway-mpg',
+  'price'
+)
+
+# Leemos nuestra versión del datase
+dataset <- read.csv('../data/imports-85-OLD.data',
+                    header = F,
+                    col.names = dataset.names,
+                    # En este dataset los NA están representados como '?'
+                    na.strings = c('?','', ' '))
+
+# Convertimos las columnas con variables categóricas a factores
+
+factores <- c("make",
+              "fuel.type",
+              "aspiration",
+              "num.of.doors",
+              "body.style",
+              "engine.type",
+              "num.of.cylinders",
+              "fuel.system",
+              "drive.wheels",
+              "engine.location")
+
+for(f in factores){
+  dataset[, f] <- as.factor(dataset[, f])
+}
+```
+
+
+Una vez realizada la carga de nuestros datos, podemos pasar a realizar una serie de descripciones básicas:
+
+```{r message= FALSE, warning=FALSE}
+###### Descripción del dataset ######
+
+# Describimos la estructura de las variables
+str(dataset)
+
+# La distribución de sus atributos
+summary(dataset)
+
+# Creamos una versión "melted" de nuestra dataset para visualizar más fácilmente
+melt.dataset <- melt(dataset)
+
+# Visualizamos la distribución de los atributos continuos de nuestra dataset
+ggplot(data = melt.dataset, aes(x = value)) + 
+  stat_density() + 
+  facet_wrap(~variable, scales = "free")
+```
+
+Como podemos observar, nuestra dataset está formada por **205 observaciones y 26 variables**, de las cuáles **16 son numéricas y 10 son categóricas**. también observamos que la mayoría de observaciones pertenecen a la clase `gas` de la variable `fuel.type`, así como que la mayoría también se encuentran dentro del subgrupo `std` de la variable `aspiration`.
+
+Por lo que corresponde a las variables objetivo de nuestro análisis, vemos que la distribución de `make` es estable, ya que a pesar de tener el primer fabricante (*toyota*) 32 observaciones (15,6% del total de las observaciones) el resto del top 6 de facbricantes se mantiene en el rango 18-12, por lo que podríamos coger estos 6 fabricantes como subgrupos en los cuales dividir las observaciones y aún así mantener una muestra bastante equitativa de los datos. El precio por contra, mantinene un rango **5118 - 45400**, lo que indica que hay observaciones por bastante por encima del 3º cuartil (16500), pero no muy por debajo del primero (7775).
+
+El resto de variables presentan una distribución bastante normal, a destacar el hecho de que `compression.ratio` presenta claros valores extremos alrededor de su máximo, como podemos ver en la gráfica de su distribución. Por su parte, `horsepower`, `engine.size` y `normalized.losses` presentan una distribución similar a `price`, alejándose de la normalidad, lo que podría indicar una correlación entre estas variables.
+
+Si visualizamos las variables categóricas que más sesgan la dataset (`fuel.type`,`aspiration` y `make`), ya que así podremos obtener un poco más de información sobre éstas:
+
+```{r message= FALSE, warning=FALSE}
+# Visualizamos la distribución de un par de factores
+barplot(with(dataset, table(fuel.type)))        # fuel.type
+barplot(with(dataset, table(aspiration)))       # aspiration
+barplot(with(dataset, table(make)))             # make
+```
+
+
+En lo que respecta a la correlación entre las variables, también podemos realizar visualizaciones:
+
+```{r message= FALSE, warning=FALSE}
+# Visualizamos la correlación de estos atributos
+corrgram(dataset,
+         order = T,
+         lower.panel = panel.shade,
+         text.panel = panel.txt)
+```
+
+Y comprobar que hay grandes correlaciones entre `price` y `engine.size`, como habíamos anunciado, así como entre otras variables, como `city.mpg` y `highway.mpg` (ya que si un automóvil tiene un gran consumo en ciudad también lo tendrá en autopista). A su vez, vemos como estas dos últimas variables afectan negativamente al precio, lo que también tiene sentido.
+
+# Limpieza de los datos
+
+Una vez seleccionados los datos, hay una serie de pasos que tenemos que realizar para asegurar una cierta limpieza de éstos. Entre los pasos a realizar, los más importantes son el tratamiento de valores nulos, los cuáles ya hemos identificado y asignado el valor **NA** en la carga de datos, y el de los valores extremos, también identificados dentro de la variable `compression.ratio`.
+
+## Elementos vacíos
+
+Primero, debemos comprobar qué columnas presentan valores vacíos y en qué proporción de su total para decidir qué estrategia tomar ante su presencia en nuestros datos. Para eso, veremos sus valores absolutos y relativos mediante la función `colSums`:
+
+```{r message= FALSE, warning=FALSE}
+# Buscamos valores nulos 
+colSums(is.na(dataset))
+
+# Representamos su peso sobre el total de las observaciones
+colSums(is.na(dataset))/nrow(dataset)
+```
+
+
+```{r message= FALSE, warning=FALSE}
+# Eliminamos observaciones con valor "?" en algunos atributos críticos
+dataset <- dataset[(!is.na(dataset$horsepower)) & (!is.na(dataset$num.of.doors)) & (!is.na(dataset$price)), ]
+
+# E imputamos la media para los siguientes
+for (column in c('normalized.losses', 'bore', 'stroke')){
+  dataset[is.na(dataset[, column]), column] <- mean(dataset[, column], na.rm = T)
+}
+```
+
+## Identificación y tratamiento de valores extremos
+
+Al describir la dataset nos percatamos de la presencia de valores extremos en la variable `compression.ratio` alrededor de su valor máximo. Pero, a pesar de parecer clara su presencia observando el histograma de la variable, podemos asegurarnos todavía más de su presencia mediante la realización de **boxplots** que nos muestren la relación de estos valores con sus cuartiles, y cómo de extremos son dichos valores:
+
+```{r message= FALSE, warning=FALSE}
+# Recordamos la distribución de compression.ratio
+summary(dataset$compression.ratio)
+
+# Realizamos nuestro plot
+boxplot(dataset$compression.ratio)
+```
+
+Como podemos observar, estos valores están por encima de **20**, cuando el tercer cuartil de la variable es **9,40**, por lo que suponen una desviación de más de **4,58 veces el rango intercuartílico** desde dicho cuartil, por lo que podemos confirmar su estatus de valores extremos.
+
+Una vez confirmada la presencia de valores extremos en esta variable, tenemos que decidir qué estrategia seguir para su tratamiento. Teniendo en cuenta su lejanía del 3 cuartil, así como su escaso número, creemos que el tratamiento por eliminación es el más acertado, ya que la cantidad de información a perder es mínima y el riesgo de imputar un valor medio sin estar seguros de un correcto registro del resto de variables es alto. Por lo tanto, procedemos a la eliminación de estas observaciones de nuestra dataset:
+
+```{r message= FALSE, warning=FALSE}
+# Eliminamos los datos que corresponden a dicho outlier
+dataset <- dataset[!dataset$compression.ratio >= 20, ]
+```
+
+# Análisis de los datos
+
+## Selección de los grupos
+
+## Comprobación de la normalidad y homogeneidad de la varianza
+
+## Aplicación de las pruebas estadísticas
+
+
+# Representación de los resultados
+
+
+
+
+# Resolución del problema
+
+
+

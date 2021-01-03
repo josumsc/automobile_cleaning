@@ -3,9 +3,9 @@ Project related to extract the most from the data located at https://archive.ics
 
 ## File Structure
 
-* **/src**: Code used in the project.
-* **/data**: Version of the dataset used in the analysis. Here we have the OLD data and the NEW data (after the cleansing).
-* **/pdf**: Document with the main steps of the process, as well as conclusions obtained during its realization.
+* **src/**: Code used in the project.
+* **data/**: Version of the dataset used in the analysis. Here we have the OLD data and the NEW data (after the cleansing).
+* **pdf/**: Document with the main steps of the process, as well as conclusions obtained during its realization.
 
 ## References
 * UCI, Automobile Dataset, https://archive.ics.uci.edu/ml/datasets/Automobile
