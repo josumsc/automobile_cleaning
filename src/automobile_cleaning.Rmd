@@ -462,3 +462,11 @@ En lo relativo al precio, observamos que los coches europeos son los que tienen 
 En cuanto a valores extremos, observamos que América es la cual presenta valores más alejados de su 3º cuartil posicionándose entre 130.000 y 160.000, llegando a ser considerados estos valores como extremos per se. En los otros 2 grupos, los valores cercanos al máximo si bien superan el 3º cuartil por una buena diferencia, no sería claro el considerarlos extremos al estar a una distancia todavía prudencial.
 
 Por último, vemos que el separar los datos por continentes no nos da una mejora en las predicción (a excepción de Europa, cosa que puede tener relación con las diferencias en las correlaciones), siendo que si usamos el modelo general para la regresión logística, los resultados son sustancialmente mejores.
+
+```{r message= FALSE, warning=FALSE}
+# Guardamos la data utilizada en su carpeta correspondiente
+write.csv(dataset, file = '../data/dataset_NEW.csv')
+write.csv(dataset_by_continent[['asia']], file = '../data/dataset_continent_asia.csv')
+write.csv(dataset_by_continent[['america']], file = '../data/dataset_continent_america.csv')
+write.csv(dataset_by_continent[['europe']], file = '../data/dataset_continent_europa.csv')
+```
