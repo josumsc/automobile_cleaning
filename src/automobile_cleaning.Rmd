@@ -201,7 +201,7 @@ dataset = dataset[!dataset$compression.ratio >= 20, ]
 
 # Análisis de los datos
 
-Una vez hemos observado las variables en general, vamos a realizar un estudio estadístico para sacar conclusiones con respecto a los atributos que consideremos importantes al inicio del documento (precio y marca).
+Una vez hemos observado las variables en general, vamos a realizar un estudio estadístico para sacar conclusiones con respecto a los atributos que consideremos importantes al inicio del documento (precio y marca según continente, ya que cada marca individual no es lo bastante grande como para generar grupos con suficiente información).
 
 ## Selección de los grupos
 
@@ -336,33 +336,36 @@ Lo siguiente es hacer un modelo de regresión lineal para cada uno de los contin
 
 ```{r message= FALSE, warning=FALSE}
 # Creación de los modelos de regresión lineal por continente
-lm_asia <- lm (formula = price.range ~ symboling +
+lm_asia <- lm (formula = price ~ symboling +
                  normalized.losses + wheel.base + length +
                  width + height + curb.weight + engine.size +
                  bore + stroke + compression.ratio + horsepower + 
                  peak.rpm + city.mpg + highway.mpg, 
                data = dataset_by_continent[['asia']])
 
-lm_america <- lm (formula = price.range ~ symboling + 
+lm_america <- lm (formula = price ~ symboling + 
                     normalized.losses + wheel.base + length + 
                     width + height + curb.weight + engine.size +
                     bore + stroke + compression.ratio + horsepower + 
                     peak.rpm + city.mpg + highway.mpg, 
                   data = dataset_by_continent[['america']])
 
-lm_europe <- lm (formula = price.range ~ symboling + 
+lm_europe <- lm (formula = price ~ symboling + 
                    normalized.losses + wheel.base + length + 
                    width + height + curb.weight + engine.size + 
                    bore + stroke + compression.ratio + horsepower +
                    peak.rpm + city.mpg + highway.mpg, 
                  data = dataset_by_continent[['europe']])
 
-lm_general <- lm (formula = price.range ~ symboling + 
+lm_general <- lm (formula = price ~ symboling + 
                     normalized.losses + wheel.base + length +
                     width + height + curb.weight + engine.size + 
                     bore + stroke + compression.ratio + horsepower +
                     peak.rpm + city.mpg + highway.mpg, data = dataset)
 
+# Obtenemos sus valores para R^2 ajustado
+r2 <- c(summary(lm_asia)$adj.r.squared, summary(lm_america)$adj.r.squared,
+        summary(lm_europe)$adj.r.squared, summary(lm_general)$adj.r.squared)
 ```
 
 Por último, los modelos de regresión logística:
@@ -399,11 +402,17 @@ glm_general <- glm (formula = price.range ~ symboling +
                     bore + stroke + compression.ratio + horsepower +
                     peak.rpm + city.mpg + highway.mpg, 
                     data = dataset, family=binomial)
+
+# Obtenemos el parámetro AIC
+aic <- c(summary(glm_asia)$aic, summary(glm_america)$aic,
+         summary(glm_europe)$aic, summary(glm_general)$aic)
 ```
 
 # Representación de los resultados
 
-Una vez resueltas las pruebas estadísticas, podemos visualizar las variables de cada grupo para entender mejor sus diferencias y sus puntos comunes, así como el efecto de cada variable sobre su precio en cada uno de los grupos.
+Una vez resueltas las pruebas estadísticas, podemos pasar a visualizar los resultados del análisis del apartado anterior para tener una referencia sobre la que obtener conclusiones al final.
+
+Empezamos con la grafícación de la correlación entre atributos de cada continente.
 
 ```{r message= FALSE, warning=FALSE}
 # Mostramos la correlación de los atributos numéricos de cada continente
@@ -415,9 +424,7 @@ for (continent in continents){
 }
 ```
 
-Como podemos comprobar, los elementos de los automóviles europeos tienen correlaciones menos fuertes entre ellos, llegando a ver colores mucho más apagados en el gráfico perteneciente a este continente. Además, incluso nuestra variable original `price` recibe una influencia por el resto de sus compañeras mucho más pequeña que en el resto de continentes, lo que podría indicar una predisposición hacia un modelo de coche más estándar y menos guiado por variables extrapoladas que empujasen al resto a variar en mayor cuantía.
-
-Continuando con un raciocinio similar, observamos que los fabricantes americanos tienden a incorporar una mayor variabilidad en los atributos de sus coches, llegando a mostrar coeficientes de corelación mucho más altos. Vemos en especial que la variable precio es fuertemente influida por muchas de las variables, dejando `height` fuera de esta ecuación.
+Además, para tener más información visual de la que sacar conclusiones, vamos a mostrar la distribución de precio por continente con sus cuartiles.
 
 ```{r message= FALSE, warning=FALSE}
 # Mostramos la distribución de precio de cada continente
@@ -431,11 +438,27 @@ for (continent in continents){
 }
 ```
 
+Por último, representaremos los resultados obtenidos en los 2 métodos de clasificación para ver qué conjunto de datos se adecúa más a los modelos de aprendizaje supervisado que hemos desarrollado:
 
+```{r message= FALSE, warning=FALSE}
+
+barplot(height=r2, names.arg=c('asia','europe','america','global'),
+        main = 'Adjusted R2 por grupo de datos')
+```
+
+```{r message= FALSE, warning=FALSE}
+
+barplot(height=aic, names.arg=c('asia','europe','america','global'),
+        main = 'AICpor grupo de datos')
+```
+
+# Resolución del problema
+
+Como podemos comprobar, los elementos de los automóviles europeos tienen correlaciones menos fuertes entre ellos, llegando a ver colores mucho más apagados en el gráfico perteneciente a este continente. Además, incluso nuestra variable original `price` recibe una influencia por el resto de sus compañeras mucho más pequeña que en el resto de continentes, lo que podría indicar una predisposición hacia un modelo de coche más estándar y menos guiado por variables extrapoladas que empujasen al resto a variar en mayor grado.
+
+Continuando con un razonamiento similar, observamos que los fabricantes americanos tienden a incorporar una mayor variabilidad en los atributos de sus coches, llegando a mostrar coeficientes de corelación mucho más altos. Vemos en especial que la variable precio es fuertemente influida por muchas de las variables, dejando `height` fuera de esta ecuación.
 En lo relativo al precio, observamos que los coches europeos son los que tienen un rango de precio mayor, llegando sus precios hasta superar los 500.000, mientras que en Asia y América llegaríamos a 200.000 y 180.000 respectivamente para el último bin de su histograma. Además, podemos ver también una predisposición de los coches europeos a la polaridad, al observar 2 grupos claros entorno a los precios bajos y altos del histograma, cosa que también observamos en menor medida en los otros 2 continentes a los que pertenecen los fabricantes, aunque si bien es cierto que en estos otros 2 grupos la evolución de la distribución es más gradual y menos diferenciada en grupos.
 
 En cuanto a valores extremos, observamos que América es la cual presenta valores más alejados de su 3º cuartil posicionándose entre 130.000 y 160.000, llegando a ser considerados estos valores como extremos per se. En los otros 2 grupos, los valores cercanos al máximo si bien superan el 3º cuartil por una buena diferencia, no sería claro el considerarlos extremos al estar a una distancia todavía prudencial.
 
-
-# Resolución del problema
-
+Por último, vemos que el separar los datos por continentes no nos da una mejora en las predicción (a excepción de Europa, cosa que puede tener relación con las diferencias en las correlaciones), siendo que si usamos el modelo general para la regresión logística, los resultados son sustancialmente mejores.
