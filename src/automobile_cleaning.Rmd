@@ -268,7 +268,6 @@ dataset_by_continent <- list()
 for (continent in continents) {
   dataset_by_continent[continent] = list(dataset[dataset$make.continent == continent, ])
 }
-dataset_by_continent
 ```
 
 ## Comprobación de la normalidad y homogeneidad de la varianza
@@ -292,29 +291,18 @@ Para acabar con este punto, realizamos el análisis de la homocedasticidad, u ho
 
 ```{r message= FALSE, warning=FALSE}
 # Recorremos cada una de las variables más interesantes de la dataset y cada uno de los continentes
-continents <- c('asia', 'europe', 'america')
-variables.to.test <- c('price', 'normalized.losses','horsepower','peak.rpm','engine.size')
+variables.to.test<- c('price', 'normalized.losses','horsepower','peak.rpm','engine.size')
 
 for(variable in variables.to.test){
-  a <- dataset_by_continent[['asia']][,variable]
-  b <- dataset_by_continent[['europe']][,variable]
-  print(bartlett.test(list(a,b)))
-}
-
-for(variable in variables.to.test){
-  a <- dataset_by_continent[['asia']][,variable]
-  b <- dataset_by_continent[['america']][,variable]
-  print(bartlett.test(list(a,b)))
-}
-
-for(variable in variables.to.test){
-  a <- dataset_by_continent[['europe']][,variable]
-  b <- dataset_by_continent[['america']][,variable]
-  print(bartlett.test(list(a,b)))
+  asia <- dataset_by_continent[['asia']][,variable]
+  europe <- dataset_by_continent[['europe']][,variable]
+  america <- dataset_by_continent[['america']][,variable]
+  print(bartlett.test(list(asia, europe, america)))
 }
 
 ```
 
+Como podemos comprobar, el resultado obtenido muestra que con un p-value aceptable para `horsepower` y `normalized.losses` aceptamos la hipótesis nula, que nos indica que las varianzas son iguales. En cambio, para las otras 3 variables, vemos unos valores de p-value bastante bajos, que indican que la varianza de los atributos es diferente en los grupos elegidos.
 
 ## Aplicación de las pruebas estadísticas
 
@@ -322,6 +310,7 @@ Para la primera prueba, la comparación de la correlación entre los atributos y
 
 ```{r message= FALSE, warning=FALSE}
 # Calculamos las correlaciones
+continents <- c('asia', 'europe', 'america')
 cuantitative_fields <- c('symboling', 'normalized.losses', 'wheel.base', 'length', 'width', 'height', 'curb.weight', 'engine.size', 'bore', 'stroke', 'compression.ratio', 'horsepower', 'peak.rpm', 'city.mpg', 'highway.mpg')
 
 corr_by_continent <- list()
