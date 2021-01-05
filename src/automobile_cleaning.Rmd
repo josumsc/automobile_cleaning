@@ -28,7 +28,6 @@ El porqué de dicha elección se basa en que esta dataset se presenta interesant
 
 Una vez comentado el atractivo de la dataset, podemos bajar a objetivos más concretos del análisis. Así pues, podríamos decir que el objetivo principal de este documento es discernir qué factores diferencian a los principales proveedores de vehículos automovilísticos, así como la relación entre la pertenencia a uno de estos grupos y el precio del automóvil en cuestión.
 
-
 # Integración y selección de los datos de interés
 
 Con los objetivos en mente y las principales características de la dataset descritas verbalmente, es el momento de bajar a la programación y ver datos más específicos y objetivos de nuestra dataset.
@@ -197,22 +196,145 @@ Una vez confirmada la presencia de valores extremos en esta variable, tenemos qu
 
 ```{r message= FALSE, warning=FALSE}
 # Eliminamos los datos que corresponden a dicho outlier
-dataset <- dataset[!dataset$compression.ratio >= 20, ]
+dataset = dataset[!dataset$compression.ratio >= 20, ]
 ```
 
 # Análisis de los datos
 
+Una vez hemos observado las variables en general, vamos a realizar un estudio estadístico para sacar conclusiones con respecto a los atributos que consideremos importantes al inicio del documento (precio y marca).
+
 ## Selección de los grupos
+
+Vamos a estudiar cómo afectan las marcas en los distintos parámetros, haciendo especial énfasis en el precio.
+
+Como vamos a poner especial atención en el precio, crearemos un nuevo atributo price.range, para poder realizar análisis categóricos con el precio, tomando como referencia los siguientes rangos:
+
+- low: Precio entre 0 y el primer cuartil (7775).
+- medium: Precio entre el primer y tercer cuartil (7775 y 16500).
+- high: Precio mayor al tercer cuartil (16500).
+
+
+```{r message= FALSE, warning=FALSE}
+nrow(dataset)
+
+# Creación del nuevo campo price.range para los rangos definidos
+for (i in 1:nrow(dataset)) {
+  if (dataset[i, 'price'] <= 7775){
+    dataset[i, 'price.range'] = 'low'
+  } else if(dataset[i, 'price'] <= 16500){
+    dataset[i, 'price.range'] = 'medium'
+  } else{
+    dataset[i, 'price.range'] = 'high'
+  }
+}
+
+# Guardamos como factor el nuevo atributo
+dataset[,'price.range'] = as.factor(dataset[,'price.range'])
+```
+
+Podemos ver cómo queda el nuevo atributo categórico en la siguiente tabla:
+```{r message= FALSE, warning=FALSE}
+# Visualizamos la distribución de price.range
+barplot(with(dataset, table(price.range)))
+```
+
+Por último, vamos a crear **n** grupos, uno por cada proveedor, para poder ver cómo la marca afecta a los distintos atributos (y principalmente al precio), por lo que realizaremos tres tipos de análisis:
+
+- Correlación de los atributos con el precio según marca, comparando con la general.
+- Predicción del precio con regresión lineal según marca y en general, comparando los resultados obtenidos entre marcas y con el general.
+- Predicción del precio con regresión logística según marca y en general, comparando los resultados obtenidos entre marcas y con el general.
+
+```{r message= FALSE, warning=FALSE}
+maker_imputer <- function(maker){
+  if(maker %in% c('alfa-romero', 'audi', 'bmw', 'mercedes-benz', 'volvo',
+                  'peugot', 'porsche', 'saab', 'volkswagen', 'jaguar')){
+    x <- 'europe'
+  } else if (maker %in% c('chevrolet', 'dodge', 'mercury', 'plymouth')){
+    x <- 'america'
+  } else {
+    x <- 'asia'
+  }
+  return(x)
+}
+
+dataset$make.continent <- sapply(dataset$make, maker_imputer)
+barplot(with(dataset, table(make.continent)))
+
+# Separamos el dataset por marcas
+continents <- c('america', 'asia', 'europe')
+
+dataset_by_continent <- list()
+
+for (continent in continents) {
+  dataset_by_continent[continent] = list(dataset[dataset$make.continent == continent, ])
+}
+dataset_by_continent
+```
 
 ## Comprobación de la normalidad y homogeneidad de la varianza
 
+Vamos a realizar la comprobación de la normalidad de todos los datos y de la homogeneidad de la varianza utilizando el teorema del límite central y análisis de la varianza (ANOVA) respectivamente.
+
+La razón de esto, es que no tenemos necesidad de saber la normalidad u homogeneidad por los grupos, ya que no son condición para ninguno de los anális que vamos a realizar.
+
+El teorema del límite central, de forma resumida, nos permite asumir la normalidad de los datos cuando el número de muestras supera un cierto número (30).
+
+Por tanto, vamos a comprobar el número de observaciones de las que disponemos tras la limpieza de los datos, para confirmar que tenemos más de 30.
+
+```{r message= FALSE, warning=FALSE}
+# Mostramos el número de elementos tras la limpieza
+nrow(dataset)
+```
+
+Tras la limpieza, el número de observaciones es 178, por lo que gracias al teorema del límite central, podemos asumir la normalidad del conjunto de datos.
+
+Para acabar con este punto, realizamos el análisis de la homocedasticidad, u homogeneidad de la varianza, sobre el dataset. Para poder realizar esta comprobación, usaremos el test de Barlett, ya que la diferencia en tamaño de los diferentes grupos a analizar es notable y este test nos asegura unos resultados comparables aún así siempre y cuando se cumpla el principio de normalidad (constatado en el punto anterior).
+
+```{r message= FALSE, warning=FALSE}
+# Recorremos cada una de las variables más interesantes de la dataset y cada uno de los continentes
+continents <- c('asia', 'europe', 'america')
+variables.to.test <- c('price', 'normalized.losses','horsepower','peak.rpm','engine.size')
+
+for(variable in variables.to.test){
+  a <- dataset_by_continent[['asia']][,variable]
+  b <- dataset_by_continent[['europe']][,variable]
+  print(bartlett.test(list(a,b)))
+}
+
+for(variable in variables.to.test){
+  a <- dataset_by_continent[['asia']][,variable]
+  b <- dataset_by_continent[['america']][,variable]
+  print(bartlett.test(list(a,b)))
+}
+
+for(variable in variables.to.test){
+  a <- dataset_by_continent[['europe']][,variable]
+  b <- dataset_by_continent[['america']][,variable]
+  print(bartlett.test(list(a,b)))
+}
+
+```
+
+
 ## Aplicación de las pruebas estadísticas
 
+Para la primera prueba, la comparación de la correlación entre los atributos y el precio según la marca y de forma general, por lo que realizamos los cálculos y los guardamos para visualizarla y sacar conclusiones de ello en los siguientes apartados.
+
+```{r message= FALSE, warning=FALSE}
+# Calculamos las correlaciones
+cuantitative_fields <- c('symboling', 'normalized.losses', 'wheel.base', 'length', 'width', 'height', 'curb.weight', 'engine.size', 'bore', 'stroke', 'compression.ratio', 'horsepower', 'peak.rpm', 'city.mpg', 'highway.mpg')
+
+corr_by_continent <- list()
+
+for (continent in continents) {
+ for (field in cuantitative_fields) {
+  corr_by_continent[[continent]][field] = cor(dataset_by_continent[[continent]][,field], dataset_by_continent[[continent]][,'price'])
+ }
+}
+
+```
 
 # Representación de los resultados
-
-
-
 
 # Resolución del problema
 
