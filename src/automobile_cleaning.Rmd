@@ -205,7 +205,7 @@ Una vez hemos observado las variables en general, vamos a realizar un estudio es
 
 ## Selección de los grupos
 
-Vamos a estudiar cómo afectan las marcas en los distintos parámetros, haciendo especial énfasis en el precio.
+Vamos a estudiar cómo afectan las marcas según continente en los distintos parámetros, haciendo especial énfasis en el precio.
 
 Como vamos a poner especial atención en el precio, crearemos un nuevo atributo price.range, para poder realizar análisis categóricos con el precio, tomando como referencia los siguientes rangos:
 
@@ -238,11 +238,11 @@ Podemos ver cómo queda el nuevo atributo categórico en la siguiente tabla:
 barplot(with(dataset, table(price.range)))
 ```
 
-Por último, vamos a crear **n** grupos, uno por cada proveedor, para poder ver cómo la marca afecta a los distintos atributos (y principalmente al precio), por lo que realizaremos tres tipos de análisis:
+Por último, vamos a crear **n** grupos, uno por cada proveedor, para poder ver cómo la marca según continente afecta a los distintos atributos (y principalmente al precio), por lo que realizaremos tres tipos de análisis:
 
-- Correlación de los atributos con el precio según marca, comparando con la general.
-- Predicción del precio con regresión lineal según marca y en general, comparando los resultados obtenidos entre marcas y con el general.
-- Predicción del precio con regresión logística según marca y en general, comparando los resultados obtenidos entre marcas y con el general.
+- Correlación de los atributos con el precio por marca según continente, comparando con la general.
+- Predicción del precio con regresión lineal por marca según continente y en general, comparando los resultados obtenidos entre marcas según continente y con el general.
+- Predicción del precio con regresión logística por marca según continente y en general, comparando los resultados obtenidos entre marcas según continente y con el general.
 
 ```{r message= FALSE, warning=FALSE}
 maker_imputer <- function(maker){
@@ -266,7 +266,8 @@ continents <- c('america', 'asia', 'europe')
 dataset_by_continent <- list()
 
 for (continent in continents) {
-  dataset_by_continent[continent] = list(dataset[dataset$make.continent == continent, ])
+  dataset_by_continent[continent] = 
+    list(dataset[dataset$make.continent == continent, ])
 }
 ```
 
@@ -290,8 +291,10 @@ Tras la limpieza, el número de observaciones es 178, por lo que gracias al teor
 Para acabar con este punto, realizamos el análisis de la homocedasticidad, u homogeneidad de la varianza, sobre el dataset. Para poder realizar esta comprobación, usaremos el test de Barlett, ya que la diferencia en tamaño de los diferentes grupos a analizar es notable y este test nos asegura unos resultados comparables aún así siempre y cuando se cumpla el principio de normalidad (constatado en el punto anterior).
 
 ```{r message= FALSE, warning=FALSE}
-# Recorremos cada una de las variables más interesantes de la dataset y cada uno de los continentes
-variables.to.test<- c('price', 'normalized.losses','horsepower','peak.rpm','engine.size')
+# Recorremos cada una de las variables más interesantes del
+# dataset y cada uno de los continentes
+variables.to.test<- c('price', 'normalized.losses',
+                      'horsepower','peak.rpm','engine.size')
 
 for(variable in variables.to.test){
   asia <- dataset_by_continent[['asia']][,variable]
@@ -311,7 +314,9 @@ Para la primera prueba, la comparación de la correlación entre los atributos y
 
 ```{r message= FALSE, warning=FALSE}
 # Calculamos las correlaciones
-cuantitative_fields <- c('symboling', 'normalized.losses', 'wheel.base', 'length', 'width', 'height', 'curb.weight', 'engine.size', 'bore', 'stroke', 'compression.ratio', 'horsepower', 'peak.rpm', 'city.mpg', 'highway.mpg')
+cuantitative_fields <- c('symboling', 'normalized.losses', 'wheel.base', 'length', 'width', 
+                         'height', 'curb.weight', 'engine.size', 'bore', 'stroke', 
+                         'compression.ratio', 'horsepower', 'peak.rpm', 'city.mpg', 'highway.mpg')
 
 corr_by_continent <- list()
 
@@ -335,19 +340,22 @@ lm_asia <- lm (formula = price.range ~ symboling +
                  normalized.losses + wheel.base + length +
                  width + height + curb.weight + engine.size +
                  bore + stroke + compression.ratio + horsepower + 
-                 peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['asia']])
+                 peak.rpm + city.mpg + highway.mpg, 
+               data = dataset_by_continent[['asia']])
 
 lm_america <- lm (formula = price.range ~ symboling + 
                     normalized.losses + wheel.base + length + 
                     width + height + curb.weight + engine.size +
                     bore + stroke + compression.ratio + horsepower + 
-                    peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['america']])
+                    peak.rpm + city.mpg + highway.mpg, 
+                  data = dataset_by_continent[['america']])
 
 lm_europe <- lm (formula = price.range ~ symboling + 
                    normalized.losses + wheel.base + length + 
                    width + height + curb.weight + engine.size + 
                    bore + stroke + compression.ratio + horsepower +
-                   peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['europe']])
+                   peak.rpm + city.mpg + highway.mpg, 
+                 data = dataset_by_continent[['europe']])
 
 lm_general <- lm (formula = price.range ~ symboling + 
                     normalized.losses + wheel.base + length +
@@ -365,28 +373,32 @@ glm_asia <- glm (formula = price.range ~ symboling +
                    normalized.losses + wheel.base + length + 
                    width + height + curb.weight + engine.size + 
                    bore + stroke + compression.ratio + horsepower + 
-                   peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['asia']],
+                   peak.rpm + city.mpg + highway.mpg, 
+                 data = dataset_by_continent[['asia']],
                  family=binomial)
 
 glm_america <- glm (formula = price.range ~ symboling + 
                       normalized.losses + wheel.base + length + 
                       width + height + curb.weight + engine.size + 
                       bore + stroke + compression.ratio + horsepower + 
-                      peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['america']],
+                      peak.rpm + city.mpg + highway.mpg, 
+                    data = dataset_by_continent[['america']],
                     family=binomial)
 
 glm_europe <- glm (formula = price.range ~ symboling + 
                      normalized.losses + wheel.base + length +
                      width + height + curb.weight + engine.size + 
                      bore + stroke + compression.ratio + horsepower + 
-                     peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['europe']],
+                     peak.rpm + city.mpg + highway.mpg, 
+                   data = dataset_by_continent[['europe']],
                    family=binomial)
 
 glm_general <- glm (formula = price.range ~ symboling + 
                     normalized.losses + wheel.base + length +
                     width + height + curb.weight + engine.size + 
                     bore + stroke + compression.ratio + horsepower +
-                    peak.rpm + city.mpg + highway.mpg, data = dataset, family=binomial)
+                    peak.rpm + city.mpg + highway.mpg, 
+                    data = dataset, family=binomial)
 ```
 
 # Representación de los resultados
@@ -426,6 +438,4 @@ En cuanto a valores extremos, observamos que América es la cual presenta valore
 
 
 # Resolución del problema
-
-
 
