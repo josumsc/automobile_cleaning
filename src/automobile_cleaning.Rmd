@@ -325,6 +325,40 @@ for (continent in continents) {
 
 # Representación de los resultados
 
+Una vez resueltas las pruebas estadísticas, podemos visualizar las variables de cada grupo para entender mejor sus diferencias y sus puntos comunes, así como el efecto de cada variable sobre su precio en cada uno de los grupos.
+
+```{r message= FALSE, warning=FALSE}
+# Mostramos la correlación de los atributos numéricos de cada continente
+for (continent in continents){
+  corrgram(dataset_by_continent[[continent]],
+         order = T,
+         lower.panel = panel.shade,
+         text.panel = panel.txt)
+}
+```
+
+Como podemos comprobar, los elementos de los automóviles europeos tienen correlaciones menos fuertes entre ellos, llegando a ver colores mucho más apagados en el gráfico perteneciente a este continente. Además, incluso nuestra variable original `price` recibe una influencia por el resto de sus compañeras mucho más pequeña que en el resto de continentes, lo que podría indicar una predisposición hacia un modelo de coche más estándar y menos guiado por variables extrapoladas que empujasen al resto a variar en mayor cuantía.
+
+Continuando con un raciocinio similar, observamos que los fabricantes americanos tienden a incorporar una mayor variabilidad en los atributos de sus coches, llegando a mostrar coeficientes de corelación mucho más altos. Vemos en especial que la variable precio es fuertemente influida por muchas de las variables, dejando `height` fuera de esta ecuación.
+
+```{r message= FALSE, warning=FALSE}
+# Mostramos la distribución de precio de cada continente
+for (continent in continents){
+  hist(dataset_by_continent[[continent]][,'price'])
+}
+
+# Y la comparamos con sus quartiles con los boxplots
+for (continent in continents){
+  boxplot(dataset_by_continent[[continent]][,'price'])
+}
+```
+
+
+En lo relativo al precio, observamos que los coches europeos son los que tienen un rango de precio mayor, llegando sus precios hasta superar los 500.000, mientras que en Asia y América llegaríamos a 200.000 y 180.000 respectivamente para el último bin de su histograma. Además, podemos ver también una predisposición de los coches europeos a la polaridad, al observar 2 grupos claros entorno a los precios bajos y altos del histograma, cosa que también observamos en menor medida en los otros 2 continentes a los que pertenecen los fabricantes, aunque si bien es cierto que en estos otros 2 grupos la evolución de la distribución es más gradual y menos diferenciada en grupos.
+
+En cuanto a valores extremos, observamos que América es la cual presenta valores más alejados de su 3º cuartil posicionándose entre 130.000 y 160.000, llegando a ser considerados estos valores como extremos per se. En los otros 2 grupos, los valores cercanos al máximo si bien superan el 3º cuartil por una buena diferencia, no sería claro el considerarlos extremos al estar a una distancia todavía prudencial.
+
+
 # Resolución del problema
 
 
