@@ -306,11 +306,11 @@ Como podemos comprobar, el resultado obtenido muestra que con un p-value aceptab
 
 ## Aplicación de las pruebas estadísticas
 
-Para la primera prueba, la comparación de la correlación entre los atributos y el precio según la marca y de forma general, por lo que realizamos los cálculos y los guardamos para visualizarla y sacar conclusiones de ello en los siguientes apartados.
+
+Para la primera prueba, la comparación de la correlación entre los atributos y el precio por marca (según continente) y de forma general, por lo que realizamos los cálculos y los guardamos para visualizarla y sacar conclusiones de ello en los siguientes apartados.
 
 ```{r message= FALSE, warning=FALSE}
 # Calculamos las correlaciones
-continents <- c('asia', 'europe', 'america')
 cuantitative_fields <- c('symboling', 'normalized.losses', 'wheel.base', 'length', 'width', 'height', 'curb.weight', 'engine.size', 'bore', 'stroke', 'compression.ratio', 'horsepower', 'peak.rpm', 'city.mpg', 'highway.mpg')
 
 corr_by_continent <- list()
@@ -321,6 +321,72 @@ for (continent in continents) {
  }
 }
 
+general_correlation <- list()
+for (field in cuantitative_fields) {
+  general_correlation[field] = cor(dataset[,field], dataset$price)
+}
+```
+
+Lo siguiente es hacer un modelo de regresión lineal para cada uno de los continentes y el general que intente entender la causística detrás de las variaciones en el precio:
+
+```{r message= FALSE, warning=FALSE}
+# Creación de los modelos de regresión lineal por continente
+lm_asia <- lm (formula = price.range ~ symboling +
+                 normalized.losses + wheel.base + length +
+                 width + height + curb.weight + engine.size +
+                 bore + stroke + compression.ratio + horsepower + 
+                 peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['asia']])
+
+lm_america <- lm (formula = price.range ~ symboling + 
+                    normalized.losses + wheel.base + length + 
+                    width + height + curb.weight + engine.size +
+                    bore + stroke + compression.ratio + horsepower + 
+                    peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['america']])
+
+lm_europe <- lm (formula = price.range ~ symboling + 
+                   normalized.losses + wheel.base + length + 
+                   width + height + curb.weight + engine.size + 
+                   bore + stroke + compression.ratio + horsepower +
+                   peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['europe']])
+
+lm_general <- lm (formula = price.range ~ symboling + 
+                    normalized.losses + wheel.base + length +
+                    width + height + curb.weight + engine.size + 
+                    bore + stroke + compression.ratio + horsepower +
+                    peak.rpm + city.mpg + highway.mpg, data = dataset)
+
+```
+
+Por último, los modelos de regresión logística:
+
+```{r message= FALSE, warning=FALSE}
+# Creación de los modelos de regresión logística por continente
+glm_asia <- glm (formula = price.range ~ symboling + 
+                   normalized.losses + wheel.base + length + 
+                   width + height + curb.weight + engine.size + 
+                   bore + stroke + compression.ratio + horsepower + 
+                   peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['asia']],
+                 family=binomial)
+
+glm_america <- glm (formula = price.range ~ symboling + 
+                      normalized.losses + wheel.base + length + 
+                      width + height + curb.weight + engine.size + 
+                      bore + stroke + compression.ratio + horsepower + 
+                      peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['america']],
+                    family=binomial)
+
+glm_europe <- glm (formula = price.range ~ symboling + 
+                     normalized.losses + wheel.base + length +
+                     width + height + curb.weight + engine.size + 
+                     bore + stroke + compression.ratio + horsepower + 
+                     peak.rpm + city.mpg + highway.mpg, data = dataset_by_continent[['europe']],
+                   family=binomial)
+
+glm_general <- glm (formula = price.range ~ symboling + 
+                    normalized.losses + wheel.base + length +
+                    width + height + curb.weight + engine.size + 
+                    bore + stroke + compression.ratio + horsepower +
+                    peak.rpm + city.mpg + highway.mpg, data = dataset, family=binomial)
 ```
 
 # Representación de los resultados
