@@ -314,15 +314,20 @@ Para la primera prueba, la comparación de la correlación entre los atributos y
 
 ```{r message= FALSE, warning=FALSE}
 # Calculamos las correlaciones
-cuantitative_fields <- c('symboling', 'normalized.losses', 'wheel.base', 'length', 'width', 
-                         'height', 'curb.weight', 'engine.size', 'bore', 'stroke', 
-                         'compression.ratio', 'horsepower', 'peak.rpm', 'city.mpg', 'highway.mpg')
+cuantitative_fields <- c('symboling', 'normalized.losses', 
+                         'wheel.base', 'length', 'width', 
+                         'height', 'curb.weight', 'engine.size',
+                         'bore', 'stroke', 'compression.ratio', 
+                         'horsepower', 'peak.rpm', 'city.mpg',
+                         'highway.mpg')
 
 corr_by_continent <- list()
 
 for (continent in continents) {
  for (field in cuantitative_fields) {
-  corr_by_continent[[continent]][field] = cor(dataset_by_continent[[continent]][,field], dataset_by_continent[[continent]][,'price'])
+  corr_by_continent[[continent]][field] = 
+    cor(dataset_by_continent[[continent]][,field],
+        dataset_by_continent[[continent]][,'price'])
  }
 }
 
@@ -449,7 +454,7 @@ barplot(height=r2, names.arg=c('asia','europe','america','global'),
 ```{r message= FALSE, warning=FALSE}
 
 barplot(height=aic, names.arg=c('asia','europe','america','global'),
-        main = 'AICpor grupo de datos')
+        main = 'AIC por grupo de datos')
 ```
 
 # Resolución del problema
@@ -466,7 +471,10 @@ Por último, vemos que el separar los datos por continentes no nos da una mejora
 ```{r message= FALSE, warning=FALSE}
 # Guardamos la data utilizada en su carpeta correspondiente
 write.csv(dataset, file = '../data/dataset_NEW.csv')
-write.csv(dataset_by_continent[['asia']], file = '../data/dataset_continent_asia.csv')
-write.csv(dataset_by_continent[['america']], file = '../data/dataset_continent_america.csv')
-write.csv(dataset_by_continent[['europe']], file = '../data/dataset_continent_europa.csv')
+write.csv(dataset_by_continent[['asia']], 
+          file = '../data/dataset_continent_asia.csv')
+write.csv(dataset_by_continent[['america']],
+          file = '../data/dataset_continent_america.csv')
+write.csv(dataset_by_continent[['europe']], 
+          file = '../data/dataset_continent_europa.csv')
 ```
